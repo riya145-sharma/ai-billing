@@ -1,0 +1,12 @@
+{
+    "items": {
+        "admin": {
+            "label": "Administrator",
+            "description": "Full access: all usage, users, quotas, pricing, budgets, reports, Azure configuration, logs"
+        },
+        "user": {
+            "label": "User",
+            "description": "Own image generation, own usage and history"
+        }
+    }
+}

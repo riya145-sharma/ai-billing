@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteBase /ai-billing/
+RewriteCond %{REQUEST_URI} !^/ai-billing/public/
+RewriteRule ^(.*)$ public/$1 [L]

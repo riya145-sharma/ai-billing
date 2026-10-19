@@ -1,0 +1,14 @@
+.env
+/vendor/
+# Runtime data — never commit or overwrite on deploy
+/storage/data/*
+/storage/locks/*
+/storage/images/*
+/storage/reports/*
+/storage/logs/*
+/storage/sessions/*
+/storage/backups/*
+/storage/branding/*
+/storage/cache/*
+!/storage/*/.gitkeep
+/public/app-root.php

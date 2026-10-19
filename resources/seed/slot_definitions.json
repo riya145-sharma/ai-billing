@@ -1,0 +1,43 @@
+{
+    "meta": {
+        "next_id": 4
+    },
+    "items": {
+        "1": {
+            "id": 1,
+            "code": "morning",
+            "label": "Morning",
+            "start": "06:00",
+            "end": "12:00",
+            "sort_order": 1,
+            "is_active": true,
+            "updated_by": null,
+            "created_at": "2026-10-19T00:00:00Z",
+            "updated_at": "2026-10-19T00:00:00Z"
+        },
+        "2": {
+            "id": 2,
+            "code": "afternoon",
+            "label": "Afternoon",
+            "start": "12:00",
+            "end": "18:00",
+            "sort_order": 2,
+            "is_active": true,
+            "updated_by": null,
+            "created_at": "2026-10-19T00:00:00Z",
+            "updated_at": "2026-10-19T00:00:00Z"
+        },
+        "3": {
+            "id": 3,
+            "code": "evening",
+            "label": "Evening",
+            "start": "18:00",
+            "end": "24:00",
+            "sort_order": 3,
+            "is_active": true,
+            "updated_by": null,
+            "created_at": "2026-10-19T00:00:00Z",
+            "updated_at": "2026-10-19T00:00:00Z"
+        }
+    }
+}

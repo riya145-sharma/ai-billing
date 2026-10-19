@@ -1,0 +1,32 @@
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Force HTTPS
+  RewriteCond %{HTTP_HOST} !^localhost [NC]
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Block dotfiles (.env, .git, ???) except .well-known
+  RewriteRule (^|/)\.(?!well-known/) - [F]
+
+  # Front controller: real files (assets) are served directly, everything else ??? index.php
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+<FilesMatch "\.(env|ini|log|sql|sh|bak|json|lock|md)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header unset X-Powered-By
+</IfModule>

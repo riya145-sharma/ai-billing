@@ -1,0 +1,13 @@
+# Safety net: if this project folder is ever placed inside public_html,
+# deny everything except the public/ directory.
+Options -Indexes
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^public/ - [L]
+  RewriteRule ^ - [F]
+</IfModule>
+<IfModule !mod_rewrite.c>
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+</IfModule>
