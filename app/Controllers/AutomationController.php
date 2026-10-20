@@ -30,10 +30,10 @@ final class AutomationController
             'allowance' => $allowance->status($uid),
             'myJobs'    => $jobs->recentForUser($uid, 7),
             'cfg'       => $config->get(),
+            'today'     => ($runner = new AutomationRunner($store))->slotsForUser($uid),
             'scripts'   => ['js/automation.js'],
         ];
         if (Auth::isAdmin()) {
-            $runner = new AutomationRunner($store);
             $users = array_values(App::get(UserRepository::class)->all());
             usort($users, fn($a, $b) => [$a['status'] !== 'active', strtolower($a['name'])] <=> [$b['status'] !== 'active', strtolower($b['name'])]);
             $rows = [];

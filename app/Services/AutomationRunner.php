@@ -608,6 +608,35 @@ final class AutomationRunner
         return array_slice($out, 0, $limit);
     }
 
+    /**
+     * Today's configured times for one user with each slot's state (job status, 'due' or
+     * 'upcoming'), plus the next time a message is expected. Read-only; no Azure calls.
+     * @return array{slots: list<array{time: string, status: string, job: ?array}>, next: ?array{date: string, time: string}}
+     */
+    public function slotsForUser(int $uid): array
+    {
+        $cfg = $this->config->get();
+        if (!isset($cfg['users'][(string)$uid]) || !$cfg['times']) {
+            return ['slots' => [], 'next' => null];
+        }
+        $now = Clock::now();
+        $today = Clock::businessDate();
+        $jobs = $this->jobs->forDay($today);
+        $slots = [];
+        $next = null;
+        foreach ($cfg['times'] as $time) {
+            $job = $jobs[AutomationJobRepository::jobId($today, $uid, $time)] ?? null;
+            $future = Clock::localAt($today, $time) > $now;
+            $status = $job['status'] ?? ($future ? 'upcoming' : 'due');
+            if ($next === null && $future && !in_array($status, AutomationJobRepository::TERMINAL, true)) {
+                $next = ['date' => $today, 'time' => $time];
+            }
+            $slots[] = ['time' => $time, 'status' => $status, 'job' => $job];
+        }
+        $next ??= ['date' => $now->modify('+1 day')->format('Y-m-d'), 'time' => $cfg['times'][0]];
+        return ['slots' => $slots, 'next' => $next];
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private function azure(): AzureClient
