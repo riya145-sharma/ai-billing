@@ -61,9 +61,12 @@ function automation_badge(string $status): string
     return '<span class="st-pill st-' . $tone . '"><i class="bi bi-' . $icon . '" aria-hidden="true"></i>' . e($label) . '</span>';
 }
 
-/** Segmented meter for small counts (CSP forbids inline widths). */
+/** Segmented meter for small counts; a progress bar for large ones (CSP forbids inline widths). */
 function pips(int $filled, int $total, string $label): string
 {
+    if ($total > 20) {
+        return '<progress class="meter-bar" max="' . $total . '" value="' . max(0, min($filled, $total)) . '" aria-label="' . e($label) . '"></progress>';
+    }
     $out = '<span class="pips" role="img" aria-label="' . e($label) . '">';
     for ($i = 0; $i < $total; $i++) {
         $out .= '<span class="pip' . ($i < $filled ? ' on' : '') . '"></span>';

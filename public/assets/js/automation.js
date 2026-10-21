@@ -70,6 +70,60 @@
         });
     });
 
+    // Message sliders: arrows + page dots over a scroll-snap rail (swipe/trackpad/keyboard scroll natively).
+    document.querySelectorAll('[data-slider]').forEach(slider => {
+        const rail = slider.querySelector('[data-slider-rail]');
+        const nav = slider.querySelector('[data-slider-nav]');
+        const prev = slider.querySelector('[data-slider-prev]');
+        const next = slider.querySelector('[data-slider-next]');
+        const dotsBox = slider.querySelector('[data-slider-dots]');
+        const cards = [...rail.children];
+        let pages = 0;
+
+        const step = () => (cards[1] ? cards[1].offsetLeft - cards[0].offsetLeft : rail.clientWidth);
+        const perView = () => Math.max(1, Math.floor((rail.clientWidth + 4) / step()));
+        const maxScroll = () => rail.scrollWidth - rail.clientWidth;
+        const goTo = page => rail.scrollTo({ left: Math.min(page * perView() * step(), maxScroll()) });
+
+        const update = () => {
+            const overflow = maxScroll() > 4;
+            nav.hidden = !overflow;
+            dotsBox.hidden = !overflow;
+            prev.disabled = rail.scrollLeft <= 4;
+            next.disabled = rail.scrollLeft >= maxScroll() - 4;
+            const active = next.disabled ? pages - 1 : Math.round(rail.scrollLeft / (perView() * step()));
+            [...dotsBox.children].forEach((d, i) => {
+                d.classList.toggle('is-active', i === active);
+                d.setAttribute('aria-current', i === active ? 'true' : 'false');
+            });
+        };
+        const build = () => {
+            const count = Math.ceil(cards.length / perView());
+            if (count !== pages) {
+                pages = count;
+                dotsBox.replaceChildren(...Array.from({ length: pages }, (_, i) => {
+                    const dot = document.createElement('button');
+                    dot.type = 'button';
+                    dot.className = 'slider-dot';
+                    dot.setAttribute('aria-label', 'Show page ' + (i + 1) + ' of ' + pages);
+                    dot.addEventListener('click', () => goTo(i));
+                    return dot;
+                }));
+            }
+            update();
+        };
+
+        prev.addEventListener('click', () => rail.scrollBy({ left: -perView() * step() }));
+        next.addEventListener('click', () => rail.scrollBy({ left: perView() * step() }));
+        let frame = 0;
+        rail.addEventListener('scroll', () => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(update);
+        }, { passive: true });
+        new ResizeObserver(build).observe(rail);
+        build();
+    });
+
     // Admin tabs: open the tab named in the URL hash (saves redirect to #users, #settings, #jobs)
     // and keep the hash in sync so a reload stays on the same tab.
     const tabs = document.querySelectorAll('.admin-tabs [data-bs-toggle="tab"]');

@@ -417,6 +417,14 @@ code { color: var(--app-text-2); }
 .pips { display: inline-flex; gap: 4px; vertical-align: middle; }
 .pip { width: 26px; height: 7px; border-radius: 999px; background: var(--app-border); }
 .pip.on { background: var(--app-accent); }
+.meter-bar {
+    display: block; width: 100%; min-width: 90px; height: 8px; border: 0; border-radius: 999px; overflow: hidden;
+    appearance: none; -webkit-appearance: none; background: var(--app-border); color: var(--app-accent); vertical-align: middle;
+}
+.meter-bar::-webkit-progress-bar { background: var(--app-border); border-radius: 999px; }
+.meter-bar::-webkit-progress-value { background: var(--app-accent); border-radius: 999px; }
+.meter-bar::-moz-progress-bar { background: var(--app-accent); border-radius: 999px; }
+td .meter-bar { width: 120px; flex-shrink: 0; }
 
 .time-pill {
     display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .6rem; border-radius: 999px;
@@ -557,13 +565,49 @@ code { color: var(--app-text-2); }
 .allow-num { grid-area: num; font-weight: 600; font-variant-numeric: tabular-nums; }
 .allow-row .pips { grid-area: pips; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 .allow-row .pip { width: auto; height: 8px; }
+.allow-row .meter-bar { grid-area: pips; }
 
 .day-heading {
     font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--app-muted);
-    margin: 1.25rem 0 .6rem; display: flex; align-items: center; gap: .75rem;
+    margin: 0; flex: 1; min-width: 0; display: flex; align-items: center; gap: .75rem;
 }
 .day-heading::after { content: ""; flex: 1; height: 1px; background: var(--app-border); }
-.message-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.1rem; }
+.day-count { font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--app-muted); opacity: .8; }
+
+/* message slider: one horizontally scrolling rail per day */
+.day-head { display: flex; align-items: center; gap: .75rem; margin: 1.25rem 0 .6rem; }
+.slider-nav { display: flex; gap: .4rem; flex-shrink: 0; }
+.slider-nav[hidden] { display: none; }
+.slider-btn {
+    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--app-border); background: var(--app-surface); color: var(--app-text); box-shadow: var(--app-shadow);
+    transition: background .15s, color .15s, opacity .15s;
+}
+.slider-btn:hover:not(:disabled) { background: var(--app-accent); border-color: var(--app-accent); color: #fff; }
+.slider-btn:disabled { opacity: .4; cursor: default; box-shadow: none; }
+.slider-btn:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+.msg-rail {
+    --per: 1.15; --gap: 1.1rem;
+    display: grid; grid-auto-flow: column; gap: var(--gap);
+    grid-auto-columns: calc((100% - (var(--per) - 1) * var(--gap)) / var(--per));
+    overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    scrollbar-width: none; padding: 6px 4px 14px; margin: -6px -4px -14px;
+}
+.msg-rail::-webkit-scrollbar { display: none; }
+.msg-rail:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; border-radius: 16px; }
+.msg-rail > .msg { scroll-snap-align: start; }
+@media (min-width: 576px)  { .msg-rail { --per: 2; } }
+@media (min-width: 1200px) { .msg-rail { --per: 3; } }
+@media (min-width: 1700px) { .msg-rail { --per: 4; } }
+.slider-dots { display: flex; justify-content: center; gap: .4rem; margin-top: .9rem; }
+.slider-dots[hidden] { display: none; }
+.slider-dot {
+    width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px;
+    background: color-mix(in srgb, var(--app-muted) 35%, transparent); transition: width .2s, background .2s;
+}
+.slider-dot.is-active { width: 22px; background: var(--app-accent); }
+.slider-dot:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .msg-rail { scroll-behavior: auto; } }
 
 /* message player cards — accent per time of day */
 .msg {
@@ -627,7 +671,6 @@ code { color: var(--app-text-2); }
 .msg-dl:hover { background: var(--tod); color: #fff; }
 .msg-ai { margin: .5rem 1.2rem 1rem; font-size: .72rem; color: var(--app-muted); display: flex; gap: .35rem; }
 .msg > :last-child:not(.msg-ai) { margin-bottom: 1rem; }
-@media (max-width: 575.98px) { .message-grid { grid-template-columns: 1fr; } }
 .message-card {
     display: flex; flex-direction: column; padding: 1.1rem 1.2rem; border-radius: 14px;
     background: var(--app-surface); border: 1px solid var(--app-border); box-shadow: var(--app-shadow);

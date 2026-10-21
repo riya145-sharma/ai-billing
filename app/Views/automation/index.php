@@ -92,8 +92,15 @@ $next = $today['next'];
         </div></div>
     <?php endif; ?>
     <?php foreach ($byDay as $date => $jobs): ?>
-        <h3 class="day-heading"><?= e($dayLabel($date)) ?></h3>
-        <div class="message-grid mb-3">
+        <div class="msg-slider mb-3" data-slider>
+        <div class="day-head">
+            <h3 class="day-heading" id="day-<?= e($date) ?>"><?= e($dayLabel($date)) ?> <span class="day-count"><?= count($jobs) ?> <?= count($jobs) === 1 ? 'message' : 'messages' ?></span></h3>
+            <div class="slider-nav" data-slider-nav hidden>
+                <button type="button" class="slider-btn" data-slider-prev aria-label="Previous messages"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+                <button type="button" class="slider-btn" data-slider-next aria-label="Next messages"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+            </div>
+        </div>
+        <div class="msg-rail" data-slider-rail tabindex="0" role="region" aria-labelledby="day-<?= e($date) ?>">
             <?php foreach ($jobs as $job):
                 $h = (int)substr($job['time'], 0, 2);
                 [$part, $partIcon, $partClass] = $h < 12 ? ['Morning', 'sunrise', 'tod-morning'] : ($h < 17 ? ['Afternoon', 'sun', 'tod-afternoon'] : ['Evening', 'moon-stars', 'tod-evening']);
@@ -135,6 +142,8 @@ $next = $today['next'];
                     <?php endif; ?>
                 </article>
             <?php endforeach; ?>
+        </div>
+        <div class="slider-dots" data-slider-dots hidden></div>
         </div>
     <?php endforeach; ?>
 </section>
