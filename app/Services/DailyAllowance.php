@@ -33,7 +33,8 @@ final class DailyAllowance
 
     public function limitFor(int $uid): ?int
     {
-        return (new AutomationConfigRepository($this->fs))->isEnabledFor($uid) ? AutomationConfigRepository::DAILY_LIMIT : null;
+        $config = new AutomationConfigRepository($this->fs);
+        return $config->isEnabledFor($uid) ? $config->dailyLimit() : null;
     }
 
     public static function file(string $date): string

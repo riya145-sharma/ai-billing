@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 
 use App\Core\App;
 use App\Core\Auth;
+use App\Core\Clock;
 use App\Repositories\AuditLog;
 use App\Repositories\AutomationConfigRepository;
 use App\Repositories\UserRepository;
@@ -19,14 +20,17 @@ final class AutomationController
         $times = is_array($_POST['times'] ?? null) ? array_map(fn($t) => is_scalar($t) ? (string)$t : '', $_POST['times']) : [];
         $themes = preg_split('/\R/u', self::post('themes')) ?: [];
         try {
-            $cfg = (new AutomationConfigRepository(App::store()))->saveSettings($times, self::post('language'), self::post('voice'), $themes, Auth::id());
+            $cfg = (new AutomationConfigRepository(App::store()))->saveSettings($times, self::post('language'), self::post('voice'), $themes, Auth::id(),
+                ctype_digit(self::post('interval_minutes')) ? (int)self::post('interval_minutes') : -1);
         } catch (\InvalidArgumentException $e) {
             self::failBack($e->getMessage(), '/automation#settings');
         }
         App::get(AuditLog::class)->record('automation.settings_updated', Auth::id(), 'automation', null, [
-            'times' => $cfg['times'], 'language' => $cfg['language'], 'voice' => $cfg['voice'], 'themes' => count($cfg['themes']),
+            'times' => $cfg['times'], 'interval_minutes' => $cfg['interval_minutes'], 'language' => $cfg['language'], 'voice' => $cfg['voice'], 'themes' => count($cfg['themes']),
         ]);
-        self::ok('Automation settings saved. Jobs that have not started yet use the new settings.', '/automation#settings');
+        self::ok('Automation settings saved: messages ' . AutomationConfigRepository::describe($cfg)
+            . ($cfg['interval_minutes'] > 0 ? ', next at ' . AutomationConfigRepository::nextIntervalSlot($cfg, Clock::now())['time'] . ' IST' : '')
+            . '. Jobs that have not started yet use the new settings.', '/automation#settings');
     }
 
     public function users(): void
@@ -44,7 +48,7 @@ final class AutomationController
         self::ok(count($valid) === 0
             ? 'Automation is off for every user.'
             : 'Automation is on for ' . count($valid) . ' user(s). Their manual and automatic generations now share the daily limit of '
-                . AutomationConfigRepository::DAILY_LIMIT . '.', '/automation#users');
+                . (new AutomationConfigRepository(App::store()))->dailyLimit() . '.', '/automation#users');
     }
 
     public function retry(string $id): void

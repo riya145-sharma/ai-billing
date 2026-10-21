@@ -85,6 +85,25 @@
         });
     });
 
+    // "Confirm password" hint: tells the user whether both entries match.
+    $$('[data-pw-match]').forEach(function (hint) {
+        var original = $(hint.getAttribute('data-pw-match'));
+        var confirm = hint.parentElement.querySelector('input');
+        if (!original || !confirm) { return; }
+        var check = function () {
+            var empty = confirm.value === '';
+            var same = confirm.value === original.value;
+            hint.classList.toggle('d-none', empty);
+            hint.classList.toggle('is-ok', same);
+            hint.innerHTML = same
+                ? '<i class="bi bi-check-circle-fill" aria-hidden="true"></i> Passwords match'
+                : '<i class="bi bi-x-circle" aria-hidden="true"></i> Passwords do not match';
+            confirm.setCustomValidity(empty || same ? '' : 'Passwords do not match');
+        };
+        confirm.addEventListener('input', check);
+        original.addEventListener('input', function () { if (confirm.value) { check(); } });
+    });
+
     // ---------------------------------------------------------------- IST clock in the top bar
     var clock = $('[data-ist-clock]');
     if (clock && window.Intl) {

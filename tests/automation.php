@@ -355,6 +355,37 @@ foreach ($autoCalls as $c) {
 $jobsJson = (string)@file_get_contents($fs->path(AutomationJobRepository::file('2026-11-23')));
 check('API keys never appear in request bodies or job records', !$secretSeen && !str_contains($jobsJson, 'test-key') && !str_contains($jobsJson, 'api-key'));
 
+section('Automation: repeat every 30 minutes');
+$ur = $users->create('Auto Repeat', 'auto-repeat@example.com', 'auto-user-password-1');
+$autoConfig->setEnabledUsers([(int)$ur['id']], 1);
+check('unlisted interval rejected', throws(fn() => $autoConfig->saveSettings(['07:00'], 'English', 'nova', $cfg0['themes'], 1, 7), InvalidArgumentException::class));
+freezeIst('2026-12-01 11:52:20');
+$rep = $autoConfig->saveSettings(AutomationConfigRepository::DEFAULT_TIMES, 'English', 'nova', $cfg0['themes'], 1, 30);
+check('saved at 11:52 → first slot 12:22, then every 30 min', AutomationConfigRepository::nextIntervalSlot($rep, Clock::now()) === ['date' => '2026-12-01', 'time' => '12:22']
+    && array_slice(AutomationConfigRepository::intervalSlots($rep, '2026-12-01'), 0, 3) === ['12:22', '12:52', '13:22']
+    && count(AutomationConfigRepository::intervalSlots($rep, '2026-12-02')) === 48
+    && AutomationConfigRepository::intervalSlots($rep, '2026-12-02')[0] === '00:22');
+check('daily limit rises to 48 and describe() says so', $autoConfig->dailyLimit() === 48 && AutomationConfigRepository::describe($rep) === 'every 30 minutes');
+$n = count($autoCalls);
+$runner()->run(60);
+check('nothing before 12:22 (earlier fixed times not caught up)', count($autoCalls) === $n && $autoJobs->forDay('2026-12-01') === []);
+freezeIst('2026-12-01 12:24:00');
+$runner()->run(240);
+check('12:22 message generated with audio', ($jobOf('2026-12-01', $ur, '12:22')['status'] ?? '') === 'completed' && count($autoCalls) === $n + 2);
+freezeIst('2026-12-01 12:55:00');
+$runner()->run(240);
+check('12:52 message generated next', ($jobOf('2026-12-01', $ur, '12:52')['status'] ?? '') === 'completed' && count($autoCalls) === $n + 4);
+check('re-saving the same interval keeps the grid', $autoConfig->saveSettings(AutomationConfigRepository::DEFAULT_TIMES, 'English', 'nova', $cfg0['themes'], 1, 30)['interval_since'] === $rep['interval_since']);
+freezeIst('2026-12-01 15:40:00');
+$runner()->run(240);
+$day = $autoJobs->forDay('2026-12-01');
+check('cron gap: only the current slot (15:22) runs, missed ones are not burst', count($day) === 3 && isset($day[AutomationJobRepository::jobId('2026-12-01', (int)$ur['id'], '15:22')])
+    && count($autoCalls) === $n + 6);
+$slots = $runner()->slotsForUser((int)$ur['id']);
+check('schedule view: runs so far plus next slot', array_column($slots['slots'], 'time') === ['12:22', '12:52', '15:22', '15:52'] && $slots['next']['time'] === '15:52');
+$off = $autoConfig->saveSettings(AutomationConfigRepository::DEFAULT_TIMES, 'English', 'nova', $cfg0['themes'], 1, 0);
+check('repeat off → fixed times and limit 3 again', $off['interval_since'] === null && $autoConfig->dailyLimit() === 3);
+
 $autoConfig->setEnabledUsers([], 1);
 Clock::freeze(null);
 putenv('TEST_CONTENT_KEY');

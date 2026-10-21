@@ -10,7 +10,7 @@ $now = Clock::now();
 $hour = (int)$now->format('G');
 $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
 $firstName = explode(' ', trim((string)$user['name']))[0] ?? '';
-$limit = AutomationConfigRepository::DAILY_LIMIT;
+$limit = AutomationConfigRepository::limitFor($cfg);
 $slots = $today['slots'];
 $delivered = count(array_filter($slots, fn($s) => $s['status'] === 'completed'));
 $next = $today['next'];
@@ -121,7 +121,7 @@ $next = $today['next'];
                 </a>
                 <a class="action-item" href="<?= url('/automation') ?>">
                     <span class="action-icon a-green"><i class="bi bi-alarm" aria-hidden="true"></i></span>
-                    <span class="action-body"><span class="action-title">Automation</span><span class="action-desc"><?= $enabled ? 'Daily messages at ' . e(implode(', ', $cfg['times'])) . ' IST.' : 'Daily motivational messages with audio.' ?></span></span>
+                    <span class="action-body"><span class="action-title">Automation</span><span class="action-desc"><?= $enabled ? 'Messages ' . e(AutomationConfigRepository::describe($cfg)) . '.' : 'Daily motivational messages with audio.' ?></span></span>
                     <i class="bi bi-chevron-right action-go" aria-hidden="true"></i>
                 </a>
             </div>

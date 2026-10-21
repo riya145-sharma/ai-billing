@@ -19,7 +19,8 @@ use App\Storage\LockTimeoutException;
  *
  * One run (under the automation/run.json lock, so runs never overlap):
  *  1. closes jobs left open on earlier IST days (no backlog is generated for them)
- *  2. plans today's jobs: one per enabled user per configured IST time (deterministic ids)
+ *  2. plans today's jobs: one per enabled user per configured IST time (deterministic ids),
+ *     or in repeat mode (e.g. every 30 minutes) one per enabled user for the slot now due
  *  3. processes due jobs (catching up on today's missed times) until the time budget is used
  *
  * Job flow: reserve content+speech allowance → generate text (saved before speech)
@@ -108,9 +109,9 @@ final class AutomationRunner
         $users = new UserRepository($this->fs);
         $enabled = array_values(array_filter(array_map('intval', array_keys($cfg['users'])),
             fn(int $uid) => ($users->find($uid)['status'] ?? '') === 'active'));
-        $times = $cfg['times'];
+        $times = AutomationConfigRepository::plannedTimes($cfg, $date, Clock::now());
         $themes = $cfg['themes'];
-        $planned = $this->jobs->mutateDay($date, function (array &$jobs) use ($date, $enabled, $times, $themes) {
+        $planned = $this->jobs->mutateDay($date, function (array &$jobs) use ($date, $enabled, $times, $themes, $cfg) {
             $n = 0;
             foreach ($jobs as $id => $j) {
                 if ($j['status'] === 'scheduled' && (!in_array((int)$j['user_id'], $enabled, true) || !in_array($j['time'], $times, true))) {
@@ -129,7 +130,7 @@ final class AutomationRunner
                     if (isset($jobs[$id]) && $jobs[$id]['status'] !== 'scheduled') {
                         continue;
                     }
-                    $theme = self::pickTheme($themes, $date, $i, $used);
+                    $theme = self::pickTheme($themes, $date, $cfg['interval_minutes'] > 0 ? count($used) : $i, $used);
                     $used[] = $theme;
                     if (isset($jobs[$id])) {
                         $jobs[$id]['theme'] = $theme;
@@ -156,7 +157,7 @@ final class AutomationRunner
                 return $t;
             }
         }
-        return $themes[$start];
+        return $themes[($start + count($used)) % $n];
     }
 
     private static function newJob(string $id, string $date, int $uid, string $time, string $theme): array
@@ -588,6 +589,21 @@ final class AutomationRunner
         $users = array_map('intval', array_keys($cfg['users']));
         $out = [];
         $now = Clock::now();
+        if ($cfg['interval_minutes'] > 0) {
+            foreach ($this->jobs->forDay(Clock::businessDate()) as $job) {
+                if (!in_array($job['status'], AutomationJobRepository::TERMINAL, true)) {
+                    $out[] = ['date' => $job['date'], 'time' => $job['time'], 'user_id' => (int)$job['user_id'], 'status' => $job['status'], 'theme' => $job['theme']];
+                }
+            }
+            $at = $now;
+            while (count($out) < $limit && $users && ($next = AutomationConfigRepository::nextIntervalSlot($cfg, $at)) !== null) {
+                foreach ($users as $uid) {
+                    $out[] = ['date' => $next['date'], 'time' => $next['time'], 'user_id' => $uid, 'status' => 'upcoming', 'theme' => null];
+                }
+                $at = Clock::localAt($next['date'], $next['time']);
+            }
+            return array_slice($out, 0, $limit);
+        }
         foreach ([0, 1] as $offset) {
             $date = $now->modify("+{$offset} day")->format('Y-m-d');
             $jobs = $offset === 0 ? $this->jobs->forDay($date) : [];
@@ -622,6 +638,21 @@ final class AutomationRunner
         $now = Clock::now();
         $today = Clock::businessDate();
         $jobs = $this->jobs->forDay($today);
+        if ($cfg['interval_minutes'] > 0) {
+            // Repeat mode: today's runs so far, then the next slot.
+            $slots = [];
+            foreach ($jobs as $job) {
+                if ((int)$job['user_id'] === $uid) {
+                    $slots[] = ['time' => $job['time'], 'status' => $job['status'], 'job' => $job];
+                }
+            }
+            usort($slots, fn($a, $b) => $a['time'] <=> $b['time']);
+            $next = AutomationConfigRepository::nextIntervalSlot($cfg, $now);
+            if ($next !== null && $next['date'] === $today) {
+                $slots[] = ['time' => $next['time'], 'status' => 'upcoming', 'job' => null];
+            }
+            return ['slots' => $slots, 'next' => $next];
+        }
         $slots = [];
         $next = null;
         foreach ($cfg['times'] as $time) {
@@ -652,6 +683,7 @@ final class AutomationRunner
                 $earlier[] = '- ' . mb_substr((string)$j['content']['text'], 0, 120) . '…';
             }
         }
+        $earlier = array_slice($earlier, -5); // repeat mode can produce dozens a day; keep the prompt short
         $language = (string)$job['language'];
         $theme = (string)$job['theme'];
         $system = "You write short, original motivational messages that will be read aloud as audio.\n"

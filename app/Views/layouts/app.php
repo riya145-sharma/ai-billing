@@ -104,6 +104,9 @@ $scripts = $scripts ?? [];
                             <div class="small text-body-secondary"><?= e($user['email']) ?></div>
                         </li>
                         <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="<?= url('/profile') ?>"><i class="bi bi-person-circle me-2" aria-hidden="true"></i>My profile</a></li>
+                        <li><a class="dropdown-item" href="<?= url('/profile') ?>#password"><i class="bi bi-key me-2" aria-hidden="true"></i>Change password</a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li>
                             <form method="post" action="<?= url('/logout') ?>">
                                 <?= csrf_field() ?>

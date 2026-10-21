@@ -7,6 +7,7 @@ PHP 8.2+ application with JSON file storage and Bootstrap. The application conta
 - Automation: three motivational messages with matching MP3 audio, generated automatically every day by cron for selected users.
 - Azure deployments (administrators): configure text deployments, select the default, discover deployments and test connections.
 - Users (administrators): create users, edit roles and status, reset passwords and unlock accounts.
+- My profile (everyone): change your own display name and password. Changing the password requires the current one, is limited to 5 attempts per 15 minutes, and signs out your other sessions. Email, role and status remain admin-only.
 
 Login, logout, CSRF protection, role checks and session expiry protect access. The home dashboard links to Content generator and Text to speech. Other former application pages are removed. Existing stored records are retained.
 

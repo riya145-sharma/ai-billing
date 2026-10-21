@@ -56,6 +56,11 @@ $r->post('/session/extend', function (): void {
     echo json_encode(['seconds_left' => Auth::secondsLeft()]);
 }, ['auth']);
 
+// My profile (own name and password)
+$r->get('/profile', [\App\Controllers\ProfileController::class, 'index'], ['auth']);
+$r->post('/profile', [\App\Controllers\ProfileController::class, 'updateDetails'], ['auth']);
+$r->post('/profile/password', [\App\Controllers\ProfileController::class, 'changePassword'], ['auth']);
+
 // Content generator
 $r->get('/content', [\App\Controllers\ContentController::class, 'index'], ['auth']);
 $r->post('/content/generate', [\App\Controllers\ContentController::class, 'generate'], ['auth']);

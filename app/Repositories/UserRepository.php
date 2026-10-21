@@ -115,6 +115,12 @@ final class UserRepository
     {
         $allowed = ['name', 'role', 'status', 'daily_image_limit', 'failed_login_count', 'locked_until', 'last_login_at', 'last_login_ip'];
         $fields = array_intersect_key($fields, array_flip($allowed));
+        if (array_key_exists('name', $fields)) {
+            $fields['name'] = trim((string)$fields['name']);
+            if ($fields['name'] === '' || mb_strlen($fields['name']) > 100) {
+                throw new \InvalidArgumentException('Name is required (max 100 characters).');
+            }
+        }
         if (isset($fields['role']) && !in_array($fields['role'], self::ROLES, true)) {
             throw new \InvalidArgumentException('Unknown role');
         }

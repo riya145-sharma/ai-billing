@@ -36,6 +36,6 @@ use App\Core\Session;
         </form>
     </div>
     <div class="card-footer small text-body-secondary">
-        Forgot your password? Ask an administrator to reset it.
+        Forgot your password? Ask an administrator to reset it. Once signed in, you can change it under My profile.
     </div>
 </div>

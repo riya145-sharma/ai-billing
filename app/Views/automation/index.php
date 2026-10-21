@@ -5,7 +5,7 @@ use App\Core\View;
 use App\Repositories\AutomationConfigRepository;
 /** @var bool $enabled @var array $allowance @var array $myJobs @var array $cfg @var array $today */
 
-$limit = AutomationConfigRepository::DAILY_LIMIT;
+$limit = AutomationConfigRepository::limitFor($cfg);
 $todayDate = Clock::businessDate();
 $yesterday = Clock::now()->modify('-1 day')->format('Y-m-d');
 $dayLabel = fn(string $d) => $d === $todayDate ? 'Today' : ($d === $yesterday ? 'Yesterday' : Clock::localAt($d, '12:00')->format('l, d M'));
@@ -24,8 +24,8 @@ $next = $today['next'];
         </h2>
         <p class="mb-0 auto-hero-sub">
             <?php if ($enabled): ?>
-                <?= count($cfg['times']) ?> short messages with matching AI audio every day at
-                <strong><?= e(implode(', ', $cfg['times'])) ?> IST</strong> in <?= e($cfg['language']) ?>. No action needed — only you can see and play them.
+                Short messages with matching AI audio
+                <strong><?= e(AutomationConfigRepository::describe($cfg)) ?></strong> in <?= e($cfg['language']) ?>. No action needed — only you can see and play them.
             <?php else: ?>
                 Ask an administrator to switch it on. Manual content and speech generation have no daily limit.
             <?php endif; ?>
@@ -279,8 +279,16 @@ $next = $today['next'];
                                                 <input class="form-control" type="time" id="time<?= $i ?>" name="times[]" value="<?= e($cfg['times'][$i] ?? '') ?>"></div>
                                         <?php endfor; ?>
                                     </div>
-                                    <div class="form-text">Up to <?= (int)AutomationConfigRepository::MAX_TIMES ?> times. Clear a box to remove that run.</div>
+                                    <div class="form-text">Up to <?= (int)AutomationConfigRepository::MAX_TIMES ?> times. Clear a box to remove that run. Ignored while "Repeat" is on.</div>
                                 </fieldset>
+                                <div class="mb-3"><label class="form-label fw-semibold" for="interval_minutes">Repeat</label>
+                                    <select class="form-select" id="interval_minutes" name="interval_minutes" aria-describedby="intervalHelp">
+                                        <?php foreach (AutomationConfigRepository::INTERVALS as $m): ?>
+                                            <option value="<?= (int)$m ?>" <?= (int)$cfg['interval_minutes'] === $m ? 'selected' : '' ?>><?= $m === 0 ? 'Off — use the times above' : e(AutomationConfigRepository::describe(['interval_minutes' => $m])) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="form-text" id="intervalHelp">Counted from when you save: saved at 11:52 with every 30 minutes → 12:22, 12:52, … The daily limit rises to match (<?= 1440 / 30 ?> a day for 30 minutes). Missed runs are not caught up.</div>
+                                </div>
                                 <div class="mb-3"><label class="form-label fw-semibold" for="language">Language</label>
                                     <input class="form-control" id="language" name="language" value="<?= e($cfg['language']) ?>" maxlength="40" required list="languageList">
                                     <datalist id="languageList"><?php foreach (['English', 'Hindi', 'Marathi', 'Tamil', 'Telugu', 'Bengali', 'Gujarati', 'Kannada', 'Spanish', 'French'] as $l): ?><option value="<?= e($l) ?>"><?php endforeach; ?></datalist>

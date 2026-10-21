@@ -12,6 +12,12 @@ return [
         ],
     ],
     [
+        'heading' => 'Account',
+        'items' => [
+            ['path' => '/profile', 'label' => 'My profile', 'icon' => 'person-circle', 'roles' => ['admin', 'user']],
+        ],
+    ],
+    [
         'heading' => 'Administration',
         'items' => [
             ['path' => '/admin/azure', 'label' => 'Azure deployments', 'icon' => 'cloud', 'roles' => ['admin']],
